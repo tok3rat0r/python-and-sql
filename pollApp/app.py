@@ -1,3 +1,7 @@
+import datetime
+
+import pytz
+
 from connection_pool import get_connection
 from models.option import Option
 from models.poll import Poll
@@ -34,7 +38,7 @@ def list_open_polls():
 
 
 def prompt_vote_poll():
-    poll_id = int(input("Enter poll would you like to vote on: "))
+    poll_id = int(input("Enter poll you'd like to vote on: "))
 
     _print_poll_options(Poll.get(poll_id).options)
 
@@ -62,6 +66,20 @@ def show_poll_votes():
             print(f"{option.text} got {votes} votes ({percentage}% of the total).")
     except ZeroDivisionError:
         print("No votes cast for this poll yet.")
+
+    vote_log = input("Would you like to see the vote log? (y/N) ")
+
+    if vote_log == "y":
+        _print_votes_for_options(options)
+
+def _print_votes_for_options(options: list[Option]):
+    for option in options:
+        print(f"-- {option.text} --")
+        for vote in option.votes:
+            naive_datetime = datetime.datetime.utcfromtimestamp(vote[2])
+            utc_date = pytz.utc.localize(naive_datetime)
+            local_date = utc_date.astimezone(pytz.timezone("Europe/Paris")).strftime("%Y-%m-%d %H:%M")
+            print(f"\t- {vote[0]} on {local_date}")
 
 
 def randomize_poll_winner():
