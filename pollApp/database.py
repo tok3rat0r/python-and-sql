@@ -29,6 +29,11 @@ FROM options
 LEFT JOIN votes ON votes.option_id = options.id
 WHERE options.poll_id = %s
 GROUP BY options.id;"""
+SELECT_POLLS_AND_VOTES = """
+SELECT polls.title, COUNT(votes.option_id) FROM polls
+JOIN options ON options.poll_id = polls.id
+JOIN votes ON votes.option_id = options.id
+GROUP BY polls.title;"""
 
 SELECT_OPTION = "SELECT * FROM options WHERE id = %s;"
 SELECT_VOTES_FOR_OPTION = "SELECT * FROM votes WHERE option_id = %s;"
@@ -78,6 +83,12 @@ def get_latest_poll(connection) -> Poll:
 def get_poll_options(connection, poll_id: int) -> list[Option]:
     with get_cursor(connection) as cursor:
         cursor.execute(SELECT_POLL_OPTIONS, (poll_id,))
+        return cursor.fetchall()
+
+
+def get_polls_and_votes(connection):
+    with get_cursor(connection) as cursor:
+        cursor.execute(SELECT_POLLS_AND_VOTES)
         return cursor.fetchall()
 
 

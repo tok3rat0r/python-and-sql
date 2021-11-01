@@ -1,12 +1,12 @@
-import datetime
-
-import pytz
-
+import charts
 from connection_pool import get_connection
 from models.option import Option
 from models.poll import Poll
+import datetime
+import pytz
 import database
 import random
+import matplotlib.pyplot as plt
 
 DATABASE_PROMPT = "Enter the DATABASE_URI value or leave empty to load from .env file: "
 MENU_PROMPT = """-- Menu --
@@ -16,7 +16,8 @@ MENU_PROMPT = """-- Menu --
 3) Vote on a poll
 4) Show poll votes
 5) Select a random winner from a poll option
-6) Exit
+6) Show votes for all polls
+7) Exit
 
 Enter your choice: """
 NEW_OPTION_PROMPT = "Enter new option text (or leave empty to stop adding options): "
@@ -64,6 +65,9 @@ def show_poll_votes():
         for option, votes in zip(options, votes_per_option):
             percentage = 100.0 * (votes / total_votes)
             print(f"{option.text} got {votes} votes ({percentage}% of the total).")
+
+        figure = charts.chart_poll_votes(options)
+        plt.show()
     except ZeroDivisionError:
         print("No votes cast for this poll yet.")
 
@@ -71,6 +75,7 @@ def show_poll_votes():
 
     if vote_log == "y":
         _print_votes_for_options(options)
+
 
 def _print_votes_for_options(options: list[Option]):
     for option in options:
@@ -92,12 +97,19 @@ def randomize_poll_winner():
     print(f"The randomly selected winner is {winner[0]}.")
 
 
+def chart_all_poll_votes():
+    with get_connection() as connection:
+        figure = charts.create_bar_chart(database.get_polls_and_votes(connection))
+        plt.show()
+
+
 MENU_OPTIONS = {
     "1": prompt_create_poll,
     "2": list_open_polls,
     "3": prompt_vote_poll,
     "4": show_poll_votes,
-    "5": randomize_poll_winner
+    "5": randomize_poll_winner,
+    "6": chart_all_poll_votes
 }
 
 
@@ -105,7 +117,7 @@ def menu():
     with get_connection() as connection:
         database.create_tables(connection)
 
-    while (selection := input(MENU_PROMPT)) != "6":
+    while (selection := input(MENU_PROMPT)) != "7":
         try:
             MENU_OPTIONS[selection]()
         except KeyError:
